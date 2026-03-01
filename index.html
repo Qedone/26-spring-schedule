@@ -6,6 +6,7 @@
     <title>墨墨课表(＾∇＾)</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" sizes="180x180" href="icon.png?v=2">
+
     <style>
         :root {
             --bg-color: #f7f7f9;
@@ -35,6 +36,7 @@
             padding: 16px 20px;
             z-index: 20;
             box-sizing: border-box;
+            padding-top: env(safe-area-inset-top, 16px); /* 适配刘海屏 */
         }
         #header-date { font-size: 14px; color: var(--text-sec); }
         #header-week { font-size: 20px; font-weight: bold; margin-top: 4px; }
@@ -78,7 +80,7 @@
             position: absolute;
             width: 76%;
             left: 17%;
-            border-radius: 10px; 
+            border-radius: 12px; 
             box-sizing: border-box;
             padding: 12px 14px;
             display: flex;
@@ -103,11 +105,20 @@
             line-height: 1.3;
             color: #2c2c2e;
         }
+        .block-loc {
+            font-size: 13px;
+            color: rgba(0, 0, 0, 0.55);
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-weight: 500;
+        }
 
         /* --- 悬浮按钮 --- */
         #week-view-btn {
             position: fixed;
-            bottom: 30px;
+            bottom: max(30px, env(safe-area-inset-bottom, 30px));
             right: 20px;
             background-color: #ffffff;
             color: #333;
@@ -139,6 +150,7 @@
         }
         .modal-header {
             padding: 20px;
+            padding-top: max(20px, env(safe-area-inset-top, 20px));
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -163,6 +175,7 @@
             overflow-x: hidden;
             padding: 10px;
             background: #fcfcfc;
+            padding-bottom: env(safe-area-inset-bottom, 20px);
         }
         #week-grid {
             display: grid;
@@ -186,16 +199,28 @@
         }
         .grid-course {
             border-radius: 6px;
-            padding: 6px;
-            font-size: 11px;
-            font-weight: 500;
+            padding: 4px;
             color: #333;
             overflow: hidden;
             text-align: center;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            line-height: 1.2;
+            gap: 4px;
+        }
+        .grid-course-name {
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.15;
+        }
+        .grid-course-loc {
+            font-size: 9px;
+            color: #555;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 2px 4px;
+            border-radius: 4px;
+            white-space: nowrap;
         }
     </style>
 </head>
@@ -226,9 +251,6 @@
 
 <script>
     // === 核心配置区 ===
-    const IS_PREVIEW = false; // 正式版已关闭预览模式
-    
-    // 已根据截图校准开学第一周的周一日期为 2026年3月2日
     const SEMESTER_START_DATE = new Date('2026-03-02T00:00:00'); 
 
     // 配色池 (低饱和度清新色彩)
@@ -258,41 +280,41 @@
         { start: 1015, end: 1060 }, // 10
         { start: 1080, end: 1125 }, // 11
         { start: 1135, end: 1180 }, // 12
-        { start: 1185, end: 1220 }  // 13 (35 mins)
+        { start: 1185, end: 1220 }  // 13
     ];
 
     const range = (start, end) => Array.from({length: end - start + 1}, (_, i) => start + i);
 
-    // 严格核对的课表数据
+    // 加入了提炼后的教学楼地点信息 (loc)
     const schedule = {
         1: [
-            { name: "数学分析（荣誉）II", s: 1, e: 2, w: range(1,16) },
-            { name: "程序设计原理与方法", s: 3, e: 4, w: range(1,16) },
-            { name: "习近平新时代中国特色社会主义思想概论", s: 6, e: 8, w: range(1,16) },
-            { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8) }
+            { name: "数学分析（荣誉）II", s: 1, e: 2, w: range(1,16), loc: "东下院" },
+            { name: "程序设计原理与方法", s: 3, e: 4, w: range(1,16), loc: "中院" },
+            { name: "习近平新时代中国特色社会主义思想概论", s: 6, e: 8, w: range(1,16), loc: "中院" },
+            { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8), loc: "上院" }
         ],
         2: [
-            { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: range(1,16) },
-            { name: "数字电子技术", s: 3, e: 4, w: range(1,8) },
-            { name: "电路理论（荣誉）", s: 7, e: 8, w: range(1,16) },
-            { name: "莎士比亚戏剧赏析", s: 9, e: 10, w: range(1,16) },
-            { name: "基础物理实验（荣誉）（1）", s: 11, e: 13, w: range(3,16) }
+            { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: range(1,16), loc: "中院" },
+            { name: "数字电子技术", s: 3, e: 4, w: range(1,8), loc: "上院" },
+            { name: "电路理论（荣誉）", s: 7, e: 8, w: range(1,16), loc: "上院" },
+            { name: "莎士比亚戏剧赏析", s: 9, e: 10, w: range(1,16), loc: "东上院" },
+            { name: "基础物理实验（荣誉）（1）", s: 11, e: 13, w: range(3,16), loc: "" } // 不排教室
         ],
         3: [
-            { name: "综合英语III", s: 1, e: 2, w: range(1,16) },
-            { name: "数学分析（荣誉）II", s: 3, e: 4, w: range(1,16) },
-            { name: "形势与政策", s: 9, e: 10, w: [5, 9, 13, 15] }, 
-            { name: "程序设计原理与方法", s: 11, e: 12, w: range(1,16) }
+            { name: "综合英语III", s: 1, e: 2, w: range(1,16), loc: "中院" },
+            { name: "数学分析（荣誉）II", s: 3, e: 4, w: range(1,16), loc: "东下院" },
+            { name: "形势与政策", s: 9, e: 10, w: [5, 9, 13, 15], loc: "东中院" }, 
+            { name: "程序设计原理与方法", s: 11, e: 12, w: range(1,16), loc: "中院" }
         ],
         4: [
-            { name: "数字电子技术", s: 1, e: 2, w: range(1,8) },
-            { name: "大学物理（荣誉）（1）", s: 3, e: 4, w: range(1,16) },
-            { name: "电路理论（荣誉）", s: 9, e: 10, w: [1, 3, 5, 7, 9, 11, 13, 15] },
-            { name: "面向人工智能的线性代数", s: 11, e: 12, w: range(1,8) }
+            { name: "数字电子技术", s: 1, e: 2, w: range(1,8), loc: "上院" },
+            { name: "大学物理（荣誉）（1）", s: 3, e: 4, w: range(1,16), loc: "中院" },
+            { name: "电路理论（荣誉）", s: 9, e: 10, w: [1, 3, 5, 7, 9, 11, 13, 15], loc: "上院" },
+            { name: "面向人工智能的线性代数", s: 11, e: 12, w: range(1,8), loc: "上院" }
         ],
         5: [
-            { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: [2, 4, 6, 8, 10, 12, 14, 16] },
-            { name: "篮球", s: 7, e: 8, w: range(1,16) }
+            { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: [2, 4, 6, 8, 10, 12, 14, 16], loc: "中院" },
+            { name: "篮球", s: 7, e: 8, w: range(1,16), loc: "南区体育馆" }
         ]
     };
 
@@ -305,33 +327,26 @@
         return `${h}:${m}`;
     }
 
-    function getNow() {
-        if (IS_PREVIEW) return new Date('2026-03-02T10:30:00');
-        return new Date();
-    }
-
     function getCurrentWeek(nowObj) {
-        // 重置时间为当天0点，避免时分秒干扰天数计算
         const nowAtMidnight = new Date(nowObj.getFullYear(), nowObj.getMonth(), nowObj.getDate());
         const startAtMidnight = new Date(SEMESTER_START_DATE.getFullYear(), SEMESTER_START_DATE.getMonth(), SEMESTER_START_DATE.getDate());
         
         const diffTime = nowAtMidnight - startAtMidnight;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
         
-        if (diffDays < 0) return 1; // 还没开学的话默认展示第一周
+        if (diffDays < 0) return 1; 
         return Math.floor(diffDays / 7) + 1;
     }
 
     // --- 主界面渲染 ---
     function renderTimeline() {
-        const now = getNow();
+        const now = new Date();
         let dayOfWeek = now.getDay();
         if (dayOfWeek === 0) dayOfWeek = 7; 
         
         const currentWeek = getCurrentWeek(now);
         
-        const previewTag = IS_PREVIEW ? " (预览模式)" : "";
-        document.getElementById('header-date').innerText = `${now.getMonth()+1}月${now.getDate()}日 星期${['日','一','二','三','四','五','六'][now.getDay()]}${previewTag}`;
+        document.getElementById('header-date').innerText = `${now.getMonth()+1}月${now.getDate()}日 星期${['日','一','二','三','四','五','六'][now.getDay()]}`;
         document.getElementById('header-week').innerText = `第 ${currentWeek} 周`;
 
         const timeline = document.getElementById('timeline');
@@ -357,12 +372,16 @@
                 block.style.height = `${(endMin - startMin) * pxPerMin}px`;
                 block.style.backgroundColor = getColor(c.name); 
                 
+                // 渲染地点HTML (带SVG小图标，如果没地点则不渲染)
+                const locHtml = c.loc ? `<div class="block-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>${c.loc}</div>` : '';
+
                 block.innerHTML = `
                     <div class="block-time">
                         <span>${formatTime(startMin)} - ${formatTime(endMin)}</span>
                         <span>(第${c.s}-${c.e}节)</span>
                     </div>
                     <div class="block-title">${c.name}</div>
+                    ${locHtml}
                 `;
                 
                 const currentMin = now.getHours() * 60 + now.getMinutes();
@@ -377,10 +396,8 @@
 
     // --- 滚动同步逻辑 ---
     function updateScroll() {
-        const now = getNow();
-        const realNow = new Date(); 
-        const secondsOffset = IS_PREVIEW ? (realNow.getSeconds() / 60) : (now.getSeconds() / 60);
-        const currentMin = now.getHours() * 60 + now.getMinutes() + secondsOffset;
+        const now = new Date(); 
+        const currentMin = now.getHours() * 60 + now.getMinutes() + (now.getSeconds() / 60);
         
         const currentY = (currentMin - startOfDayMin) * pxPerMin;
         const screenCenterY = window.innerHeight / 2;
@@ -391,7 +408,7 @@
 
     // --- 本周全览网格渲染 ---
     function renderWeekGrid() {
-        const now = getNow();
+        const now = new Date();
         const currentWeek = getCurrentWeek(now);
         const grid = document.getElementById('week-grid');
         grid.innerHTML = ''; 
@@ -424,7 +441,13 @@
                     el.style.backgroundColor = getColor(c.name); 
                     el.style.gridColumn = day + 1;
                     el.style.gridRow = `${c.s + 1} / ${c.e + 2}`;
-                    el.innerText = c.name;
+                    
+                    const gridLocHtml = c.loc ? `<div class="grid-course-loc">${c.loc}</div>` : '';
+                    
+                    el.innerHTML = `
+                        <div class="grid-course-name">${c.name}</div>
+                        ${gridLocHtml}
+                    `;
                     grid.appendChild(el);
                 }
             });
