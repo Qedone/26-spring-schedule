@@ -26,7 +26,7 @@
             height: 100vh;
         }
 
-        /* --- 主界面样式 --- */
+        /* --- 主界面头部 --- */
         #header {
             position: fixed;
             top: 0;
@@ -42,6 +42,7 @@
         #header-date { font-size: 14px; color: var(--text-sec); }
         #header-week { font-size: 20px; font-weight: bold; margin-top: 4px; }
 
+        /* --- 实时时间指针 --- */
         #pointer {
             position: absolute;
             left: 0;
@@ -76,7 +77,7 @@
             transform: translateY(-50%);
         }
 
-        /* 课程块优化 */
+        /* --- 课程块排版重构 --- */
         .block {
             position: absolute;
             width: 76%;
@@ -107,33 +108,34 @@
         
         .block-content {
             position: relative;
-            z-index: 2;
-            padding: 12px 14px;
+            z-index: 3;
+            padding: 10px 14px;
             width: 100%;
             height: 100%;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            justify-content: center;
+            justify-content: flex-start; /* 改为置顶对齐 */
+            gap: 3px;
         }
         .block-time {
-            font-size: 12px;
-            color: rgba(0, 0, 0, 0.6);
-            margin-bottom: 4px;
+            font-size: 11px;
+            color: rgba(0, 0, 0, 0.55);
             display: flex;
             justify-content: space-between;
             font-weight: 500;
         }
         .block-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 600;
-            line-height: 1.3;
+            line-height: 1.35;
             color: #2c2c2e;
+            margin-top: 1px;
         }
         .block-loc {
-            font-size: 13px;
-            color: rgba(0, 0, 0, 0.6);
-            margin-top: 6px;
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.65);
+            margin-top: 2px;
             display: flex;
             align-items: center;
             gap: 4px;
@@ -222,7 +224,6 @@
             grid-template-columns: 42px repeat(5, 1fr);
             grid-auto-rows: 58px; 
             gap: 4px;
-            /* 为滑动预留默认状态 */
             transform: translateX(0);
             opacity: 1;
         }
@@ -251,7 +252,7 @@
         }
         .grid-course {
             border-radius: 6px;
-            padding: 4px;
+            padding: 4px 2px;
             color: #333;
             overflow: hidden;
             text-align: center;
@@ -259,20 +260,26 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 4px;
+            gap: 3px;
         }
         .grid-course-name {
             font-size: 11px;
             font-weight: 600;
             line-height: 1.15;
+            width: 100%;
         }
         .grid-course-loc {
-            font-size: 9px;
-            color: #555;
-            background: rgba(255, 255, 255, 0.5);
-            padding: 2px 4px;
+            font-size: 8.5px;
+            color: #444;
+            background: rgba(255, 255, 255, 0.55);
+            padding: 2px 3px;
             border-radius: 4px;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 95%;
+            font-weight: 500;
+            letter-spacing: -0.2px;
         }
     </style>
 </head>
@@ -347,44 +354,45 @@
 
     const range = (start, end) => Array.from({length: end - start + 1}, (_, i) => start + i);
 
+    // 录入了精确的教学楼和教室号码 (room)
     const schedule = {
         1: [
-            { name: "数学分析（荣誉）II", s: 1, e: 2, w: range(1,16), loc: "东下院" },
-            { name: "程序设计原理与方法", s: 3, e: 4, w: range(1,16), loc: "中院" },
+            { name: "数学分析（荣誉）II", s: 1, e: 2, w: range(1,16), loc: "东下院", room: "105" },
+            { name: "程序设计原理与方法", s: 3, e: 4, w: range(1,16), loc: "中院", room: "211" },
             { 
                 name: "习近平新时代中国特色社会主义思想概论", 
-                s: 6, e: 8, // 【关键修复】这里改回8，保证网格周历不与后面的课撞车
+                s: 6, e: 8, 
                 w: range(1,16), 
-                loc: "中院",
+                loc: "中院", room: "211",
                 customPeriods: [
                     { start: 775, end: 820 },   // 12:55 - 13:40
                     { start: 830, end: 875 },   // 13:50 - 14:35
-                    { start: 885, end: 930 }    // 14:45 - 15:30 (修复笔误，原本17:30会连着线性代数一起覆盖)
+                    { start: 885, end: 930 }    // 14:45 - 15:30 
                 ]
             },
-            { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8), loc: "上院" }
+            { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8), loc: "上院", room: "115" }
         ],
         2: [
-            { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: range(1,16), loc: "中院" },
-            { name: "数字电子技术", s: 3, e: 4, w: range(1,8), loc: "上院" },
-            { name: "电路理论（荣誉）", s: 7, e: 8, w: range(1,16), loc: "上院" },
-            { name: "基础物理实验（荣誉）（1）", s: 11, e: 13, w: range(3,16), loc: "" } 
+            { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: range(1,16), loc: "中院", room: "311" },
+            { name: "数字电子技术", s: 3, e: 4, w: range(1,8), loc: "上院", room: "204" },
+            { name: "电路理论（荣誉）", s: 7, e: 8, w: range(1,16), loc: "上院", room: "103" },
+            { name: "基础物理实验（荣誉）（1）", s: 11, e: 13, w: range(3,16), loc: "不排教室", room: "" } 
         ],
         3: [
-            { name: "综合英语III", s: 1, e: 2, w: range(1,16), loc: "中院" },
-            { name: "数学分析（荣誉）II", s: 3, e: 4, w: range(1,16), loc: "东下院" },
-            { name: "形势与政策", s: 9, e: 10, w: [5, 9, 13, 15], loc: "东中院" }, 
-            { name: "程序设计原理与方法", s: 11, e: 12, w: range(1,16), loc: "中院" }
+            { name: "综合英语III", s: 1, e: 2, w: range(1,16), loc: "中院", room: "105" },
+            { name: "数学分析（荣誉）II", s: 3, e: 4, w: range(1,16), loc: "东下院", room: "105" },
+            { name: "形势与政策", s: 9, e: 10, w: [5, 9, 13, 15], loc: "东中院", room: "1-107" }, 
+            { name: "程序设计原理与方法", s: 11, e: 12, w: range(1,16), loc: "中院", room: "211" }
         ],
         4: [
-            { name: "数字电子技术", s: 1, e: 2, w: range(1,8), loc: "上院" },
-            { name: "大学物理（荣誉）（1）", s: 3, e: 4, w: range(1,16), loc: "中院" },
-            { name: "电路理论（荣誉）", s: 9, e: 10, w: [1, 3, 5, 7, 9, 11, 13, 15], loc: "上院" },
-            { name: "面向人工智能的线性代数", s: 11, e: 12, w: range(1,8), loc: "上院" }
+            { name: "数字电子技术", s: 1, e: 2, w: range(1,8), loc: "上院", room: "204" },
+            { name: "大学物理（荣誉）（1）", s: 3, e: 4, w: range(1,16), loc: "中院", room: "311" },
+            { name: "电路理论（荣誉）", s: 9, e: 10, w: [1, 3, 5, 7, 9, 11, 13, 15], loc: "上院", room: "103" },
+            { name: "面向人工智能的线性代数", s: 11, e: 12, w: range(1,8), loc: "上院", room: "115" }
         ],
         5: [
-            { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: [2, 4, 6, 8, 10, 12, 14, 16], loc: "中院" },
-            { name: "篮球", s: 7, e: 8, w: range(1,16), loc: "南区体育馆" }
+            { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: [2, 4, 6, 8, 10, 12, 14, 16], loc: "中院", room: "311" },
+            { name: "篮球", s: 7, e: 8, w: range(1,16), loc: "南区体育馆", room: "" }
         ]
     };
 
@@ -450,8 +458,9 @@
                 block.style.height = `${(endMin - startMin) * pxPerMin}px`;
                 
                 let baseHexColor = getColor(c.name);
-                
                 let bgHtml = '';
+                
+                // 渲染内部色块和专属“♨️/☕️”休息图标
                 for(let i = 0; i < periods.length; i++) {
                     let p = periods[i];
                     let pTop = (p.start - startMin) * pxPerMin;
@@ -463,13 +472,30 @@
                         let breakEnd = periods[i+1].start;
                         let breakTop = (breakStart - startMin) * pxPerMin;
                         let breakHeight = (breakEnd - breakStart) * pxPerMin;
+                        
+                        // 浅色背景
                         bgHtml += `<div class="block-bg" style="top:${breakTop}px; height:${breakHeight}px; background-color:${hexToRgba(baseHexColor, 0.35)};"></div>`;
+                        
+                        // 正中间的水印风咖啡/热气图标 (与定位icon同源粗细)
+                        bgHtml += `
+                        <div style="position:absolute; top:${breakTop}px; left:0; width:100%; height:${breakHeight}px; display:flex; justify-content:center; align-items:center; z-index:2; color: rgba(0,0,0,0.15);">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M18 8h1a4 4 0 0 1 0 8h-1"></path>
+                                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path>
+                                <line x1="6" y1="1" x2="6" y2="4"></line>
+                                <line x1="10" y1="1" x2="10" y2="4"></line>
+                                <line x1="14" y1="1" x2="14" y2="4"></line>
+                            </svg>
+                        </div>`;
                     }
                 }
 
-                const locHtml = c.loc ? `<div class="block-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>${c.loc}</div>` : '';
-                const dispPeriod = c.customPeriods ? `${c.s}-${c.e}` : `${c.s}-${c.e}`; // 统一显示
+                // 组装完整的显示地点
+                const fullLocStr = c.room ? `${c.loc} ${c.room}` : c.loc;
+                const locHtml = c.loc ? `<div class="block-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>${fullLocStr}</div>` : '';
+                const dispPeriod = c.customPeriods ? `${c.s}-${c.e}` : `${c.s}-${c.e}`; 
 
+                // 内容不再居中，而是靠上渲染
                 block.innerHTML = `
                     ${bgHtml}
                     <div class="block-content">
@@ -505,7 +531,6 @@
     // --- 学期周历网格 ---
     let viewingWeek = 1;
     
-    // 渲染具体网格数据的函数
     function populateGridData(week) {
         const grid = document.getElementById('week-grid');
         grid.innerHTML = ''; 
@@ -539,7 +564,10 @@
                     el.style.gridColumn = day + 1;
                     el.style.gridRow = `${c.s + 1} / ${c.e + 2}`;
                     
-                    const gridLocHtml = c.loc ? `<div class="grid-course-loc">${c.loc}</div>` : '';
+                    // 网格中紧凑排版地点，如 "中院211" 不加空格
+                    const gridLocStr = c.room ? `${c.loc}${c.room}` : c.loc;
+                    const gridLocHtml = c.loc ? `<div class="grid-course-loc">${gridLocStr}</div>` : '';
+                    
                     el.innerHTML = `
                         <div class="grid-course-name">${c.name}</div>
                         ${gridLocHtml}
@@ -550,7 +578,6 @@
         }
     }
 
-    // 带动画的翻页执行函数
     function animateGridToWeek(week, direction) {
         const currentWeek = getCurrentWeek(new Date());
         let titleEl = document.getElementById('modal-title-text');
@@ -564,22 +591,16 @@
         }
 
         const grid = document.getElementById('week-grid');
-        
-        // 1. 设置动画状态并滑出
         grid.style.transition = 'transform 0.15s ease-out, opacity 0.15s ease-out';
         grid.style.transform = direction === 'next' ? 'translateX(-30px)' : 'translateX(30px)';
         grid.style.opacity = '0';
 
-        // 2. 等待滑出完毕后，更换数据并瞬间移到另一侧准备滑入
         setTimeout(() => {
             populateGridData(week);
-            grid.style.transition = 'none'; // 取消动画
-            grid.style.transform = direction === 'next' ? 'translateX(30px)' : 'translateX(-30px)'; // 瞬移到准备进入的一侧
-            
-            // 强制重绘 (Force reflow)
+            grid.style.transition = 'none'; 
+            grid.style.transform = direction === 'next' ? 'translateX(30px)' : 'translateX(-30px)'; 
             void grid.offsetWidth;
 
-            // 3. 恢复动画，向中间滑入
             grid.style.transition = 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.2s ease-in';
             grid.style.transform = 'translateX(0)';
             grid.style.opacity = '1';
@@ -594,7 +615,6 @@
 
     btnOpen.addEventListener('click', () => {
         viewingWeek = getCurrentWeek(new Date());
-        // 打开时不带左右动画，直接渲染
         let titleEl = document.getElementById('modal-title-text');
         titleEl.innerText = `第 ${viewingWeek} 周 (本)`;
         titleEl.style.fontSize = '15px';
@@ -619,7 +639,6 @@
         } 
     });
 
-    // 屏幕左右滑动切换 (引入了动画)
     let touchStartX = 0;
     scrollArea.addEventListener('touchstart', e => {
         touchStartX = e.changedTouches[0].screenX;
