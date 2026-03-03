@@ -76,7 +76,7 @@
             transform: translateY(-50%);
         }
 
-        /* 课程块优化 (支持内部深浅相间) */
+        /* 课程块优化 */
         .block {
             position: absolute;
             width: 76%;
@@ -192,11 +192,12 @@
             border: none;
             font-size: 16px;
             color: var(--active-indicator);
-            padding: 4px 8px;
+            padding: 4px 12px;
             cursor: pointer;
+            touch-action: manipulation;
         }
         .nav-btn:active { opacity: 0.5; }
-        .modal-title { font-size: 18px; font-weight: bold; width: 90px; text-align: center; white-space: nowrap;}
+        .modal-title { font-size: 18px; font-weight: bold; width: 95px; text-align: center; white-space: nowrap;}
         .close-btn {
             background: #f2f2f7;
             border: none;
@@ -221,6 +222,9 @@
             grid-template-columns: 42px repeat(5, 1fr);
             grid-auto-rows: 58px; 
             gap: 4px;
+            /* 为滑动预留默认状态 */
+            transform: translateX(0);
+            opacity: 1;
         }
         .grid-header {
             font-size: 12px;
@@ -349,14 +353,13 @@
             { name: "程序设计原理与方法", s: 3, e: 4, w: range(1,16), loc: "中院" },
             { 
                 name: "习近平新时代中国特色社会主义思想概论", 
-                s: 6, e: 10, 
-                disp: "6-8", 
+                s: 6, e: 8, // 【关键修复】这里改回8，保证网格周历不与后面的课撞车
                 w: range(1,16), 
                 loc: "中院",
                 customPeriods: [
                     { start: 775, end: 820 },   // 12:55 - 13:40
                     { start: 830, end: 875 },   // 13:50 - 14:35
-                    { start: 885, end: 1050 }   // 14:45 - 17:30
+                    { start: 885, end: 930 }    // 14:45 - 15:30 (修复笔误，原本17:30会连着线性代数一起覆盖)
                 ]
             },
             { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8), loc: "上院" }
@@ -387,7 +390,7 @@
 
     const pxPerMin = 3; 
     const startOfDayMin = 450; 
-    const MAX_WEEKS = 16; // 锁定最大周数为16周
+    const MAX_WEEKS = 16; 
     
     function formatTime(min) {
         let h = Math.floor(min / 60).toString().padStart(2, '0');
@@ -401,7 +404,6 @@
         const diffDays = Math.floor((nowAtMidnight - startAtMidnight) / (1000 * 60 * 60 * 24));
         if (diffDays < 0) return 1; 
         
-        // 自动计算当前周数，如果超过16周，则停留在16周
         let calculatedWeek = Math.floor(diffDays / 7) + 1;
         return calculatedWeek > MAX_WEEKS ? MAX_WEEKS : calculatedWeek;
     }
@@ -466,7 +468,7 @@
                 }
 
                 const locHtml = c.loc ? `<div class="block-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>${c.loc}</div>` : '';
-                const dispPeriod = c.disp || `${c.s}-${c.e}`;
+                const dispPeriod = c.customPeriods ? `${c.s}-${c.e}` : `${c.s}-${c.e}`; // 统一显示
 
                 block.innerHTML = `
                     ${bgHtml}
@@ -502,18 +504,9 @@
 
     // --- 学期周历网格 ---
     let viewingWeek = 1;
-    function renderWeekGrid(week) {
-        const currentWeek = getCurrentWeek(new Date());
-        let titleEl = document.getElementById('modal-title-text');
-        
-        if (week === currentWeek) {
-            titleEl.innerText = `第 ${week} 周 (本)`;
-            titleEl.style.fontSize = '16px';
-        } else {
-            titleEl.innerText = `第 ${week} 周`;
-            titleEl.style.fontSize = '18px';
-        }
-
+    
+    // 渲染具体网格数据的函数
+    function populateGridData(week) {
         const grid = document.getElementById('week-grid');
         grid.innerHTML = ''; 
 
@@ -557,6 +550,42 @@
         }
     }
 
+    // 带动画的翻页执行函数
+    function animateGridToWeek(week, direction) {
+        const currentWeek = getCurrentWeek(new Date());
+        let titleEl = document.getElementById('modal-title-text');
+        
+        if (week === currentWeek) {
+            titleEl.innerText = `第 ${week} 周 (本)`;
+            titleEl.style.fontSize = '15px';
+        } else {
+            titleEl.innerText = `第 ${week} 周`;
+            titleEl.style.fontSize = '18px';
+        }
+
+        const grid = document.getElementById('week-grid');
+        
+        // 1. 设置动画状态并滑出
+        grid.style.transition = 'transform 0.15s ease-out, opacity 0.15s ease-out';
+        grid.style.transform = direction === 'next' ? 'translateX(-30px)' : 'translateX(30px)';
+        grid.style.opacity = '0';
+
+        // 2. 等待滑出完毕后，更换数据并瞬间移到另一侧准备滑入
+        setTimeout(() => {
+            populateGridData(week);
+            grid.style.transition = 'none'; // 取消动画
+            grid.style.transform = direction === 'next' ? 'translateX(30px)' : 'translateX(-30px)'; // 瞬移到准备进入的一侧
+            
+            // 强制重绘 (Force reflow)
+            void grid.offsetWidth;
+
+            // 3. 恢复动画，向中间滑入
+            grid.style.transition = 'transform 0.2s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.2s ease-in';
+            grid.style.transform = 'translateX(0)';
+            grid.style.opacity = '1';
+        }, 150);
+    }
+
     // --- 交互事件绑定 ---
     const btnOpen = document.getElementById('week-view-btn');
     const btnClose = document.getElementById('close-modal-btn');
@@ -565,7 +594,11 @@
 
     btnOpen.addEventListener('click', () => {
         viewingWeek = getCurrentWeek(new Date());
-        renderWeekGrid(viewingWeek); 
+        // 打开时不带左右动画，直接渲染
+        let titleEl = document.getElementById('modal-title-text');
+        titleEl.innerText = `第 ${viewingWeek} 周 (本)`;
+        titleEl.style.fontSize = '15px';
+        populateGridData(viewingWeek); 
         modal.classList.add('show');
     });
 
@@ -573,15 +606,20 @@
         modal.classList.remove('show');
     });
 
-    // 左右箭头切换（加入了 16 周的严格限制）
     document.getElementById('prev-week-btn').addEventListener('click', () => {
-        if (viewingWeek > 1) { viewingWeek--; renderWeekGrid(viewingWeek); }
+        if (viewingWeek > 1) { 
+            viewingWeek--; 
+            animateGridToWeek(viewingWeek, 'prev'); 
+        }
     });
     document.getElementById('next-week-btn').addEventListener('click', () => {
-        if (viewingWeek < MAX_WEEKS) { viewingWeek++; renderWeekGrid(viewingWeek); } 
+        if (viewingWeek < MAX_WEEKS) { 
+            viewingWeek++; 
+            animateGridToWeek(viewingWeek, 'next'); 
+        } 
     });
 
-    // 屏幕左右滑动切换 (Touch Events，同样加入了 16 周的严格限制)
+    // 屏幕左右滑动切换 (引入了动画)
     let touchStartX = 0;
     scrollArea.addEventListener('touchstart', e => {
         touchStartX = e.changedTouches[0].screenX;
@@ -589,10 +627,16 @@
     
     scrollArea.addEventListener('touchend', e => {
         let touchEndX = e.changedTouches[0].screenX;
-        if (touchStartX - touchEndX > 50) { // 向左滑动 -> 下一周
-            if (viewingWeek < MAX_WEEKS) { viewingWeek++; renderWeekGrid(viewingWeek); }
-        } else if (touchEndX - touchStartX > 50) { // 向右滑动 -> 上一周
-            if (viewingWeek > 1) { viewingWeek--; renderWeekGrid(viewingWeek); }
+        if (touchStartX - touchEndX > 50) { 
+            if (viewingWeek < MAX_WEEKS) { 
+                viewingWeek++; 
+                animateGridToWeek(viewingWeek, 'next'); 
+            }
+        } else if (touchEndX - touchStartX > 50) { 
+            if (viewingWeek > 1) { 
+                viewingWeek--; 
+                animateGridToWeek(viewingWeek, 'prev'); 
+            }
         }
     }, {passive: true});
 
