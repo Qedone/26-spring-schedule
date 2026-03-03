@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>墨墨课表(＾∇＾)</title>
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <link rel="apple-touch-icon" sizes="180x180" href="icon.png?v=2">
 
@@ -36,7 +37,7 @@
             padding: 16px 20px;
             z-index: 20;
             box-sizing: border-box;
-            padding-top: env(safe-area-inset-top, 16px); /* 适配刘海屏 */
+            padding-top: env(safe-area-inset-top, 16px); 
         }
         #header-date { font-size: 14px; color: var(--text-sec); }
         #header-week { font-size: 20px; font-weight: bold; margin-top: 4px; }
@@ -75,29 +76,53 @@
             transform: translateY(-50%);
         }
 
-        /* 课程块优化 */
+        /* 课程块优化 (支持内部深浅相间) */
         .block {
             position: absolute;
             width: 76%;
             left: 17%;
             border-radius: 12px; 
             box-sizing: border-box;
+            box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+            border: none;
+            overflow: hidden; 
+        }
+        .block::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 12px;
+            pointer-events: none;
+            z-index: 5;
+        }
+        .block.active::after {
+            box-shadow: inset 4px 0 0 var(--active-indicator);
+        }
+        
+        .block-bg {
+            position: absolute;
+            width: 100%;
+            z-index: 1;
+        }
+        
+        .block-content {
+            position: relative;
+            z-index: 2;
             padding: 12px 14px;
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
-            border: none;
-        }
-        .block.active {
-            box-shadow: inset 4px 0 0 var(--active-indicator), 0 4px 12px rgba(0,0,0,0.05);
         }
         .block-time {
             font-size: 12px;
-            color: rgba(0, 0, 0, 0.5);
+            color: rgba(0, 0, 0, 0.6);
             margin-bottom: 4px;
             display: flex;
             justify-content: space-between;
+            font-weight: 500;
         }
         .block-title {
             font-size: 15px;
@@ -107,7 +132,7 @@
         }
         .block-loc {
             font-size: 13px;
-            color: rgba(0, 0, 0, 0.55);
+            color: rgba(0, 0, 0, 0.6);
             margin-top: 6px;
             display: flex;
             align-items: center;
@@ -134,7 +159,7 @@
             gap: 6px;
         }
 
-        /* --- 本周全览弹窗 --- */
+        /* --- 学期周历弹窗 --- */
         #week-modal {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -149,15 +174,29 @@
             transform: translateY(0);
         }
         .modal-header {
-            padding: 20px;
-            padding-top: max(20px, env(safe-area-inset-top, 20px));
+            padding: 16px 20px;
+            padding-top: max(16px, env(safe-area-inset-top, 16px));
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px solid #f0f0f0;
             background: #fff;
         }
-        .modal-title { font-size: 18px; font-weight: bold; }
+        .modal-header-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .nav-btn {
+            background: none;
+            border: none;
+            font-size: 16px;
+            color: var(--active-indicator);
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .nav-btn:active { opacity: 0.5; }
+        .modal-title { font-size: 18px; font-weight: bold; width: 90px; text-align: center; white-space: nowrap;}
         .close-btn {
             background: #f2f2f7;
             border: none;
@@ -179,8 +218,8 @@
         }
         #week-grid {
             display: grid;
-            grid-template-columns: 30px repeat(5, 1fr);
-            grid-auto-rows: 50px; 
+            grid-template-columns: 42px repeat(5, 1fr);
+            grid-auto-rows: 58px; 
             gap: 4px;
         }
         .grid-header {
@@ -190,12 +229,21 @@
             padding-bottom: 8px;
         }
         .grid-time {
-            font-size: 10px;
+            font-size: 12px;
+            font-weight: 600;
             color: var(--text-sec);
             text-align: center;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
+            line-height: 1.2;
+        }
+        .grid-time span {
+            font-size: 9px;
+            font-weight: 400;
+            color: #999;
+            margin-top: 2px;
         }
         .grid-course {
             border-radius: 6px;
@@ -236,24 +284,27 @@
 
     <div id="week-view-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-        本周全览
+        学期周历
     </div>
 
     <div id="week-modal">
         <div class="modal-header">
-            <div class="modal-title" id="modal-title-text">本周全览</div>
+            <div class="modal-header-left">
+                <button class="nav-btn" id="prev-week-btn">◀</button>
+                <div class="modal-title" id="modal-title-text">第 1 周</div>
+                <button class="nav-btn" id="next-week-btn">▶</button>
+            </div>
             <button class="close-btn" id="close-modal-btn">关闭</button>
         </div>
-        <div class="modal-body">
+        <div class="modal-body" id="modal-body-scroll">
             <div id="week-grid"></div>
         </div>
     </div>
 
 <script>
-    // === 核心配置区 ===
     const SEMESTER_START_DATE = new Date('2026-03-02T00:00:00'); 
 
-    // 配色池 (低饱和度清新色彩)
+    // 配色池与转换功能 
     const pastelColors = ['#eadeeb', '#dceded', '#ebd9e1', '#dae8df', '#f8dfdd', '#fae0d6', '#d6e6dc'];
     const courseColorMap = {};
     let colorIndex = 0;
@@ -265,8 +316,15 @@
         }
         return courseColorMap[courseName];
     }
+
+    function hexToRgba(hex, alpha) {
+        let r = parseInt(hex.slice(1, 3), 16),
+            g = parseInt(hex.slice(3, 5), 16),
+            b = parseInt(hex.slice(5, 7), 16);
+        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
     
-    // 严格核对的时间表
+    // 标准时间表
     const classTimes = [
         { start: 480, end: 525 },   // 1
         { start: 535, end: 580 },   // 2
@@ -285,20 +343,29 @@
 
     const range = (start, end) => Array.from({length: end - start + 1}, (_, i) => start + i);
 
-    // 加入了提炼后的教学楼地点信息 (loc)
     const schedule = {
         1: [
             { name: "数学分析（荣誉）II", s: 1, e: 2, w: range(1,16), loc: "东下院" },
             { name: "程序设计原理与方法", s: 3, e: 4, w: range(1,16), loc: "中院" },
-            { name: "习近平新时代中国特色社会主义思想概论", s: 6, e: 8, w: range(1,16), loc: "中院" },
+            { 
+                name: "习近平新时代中国特色社会主义思想概论", 
+                s: 6, e: 10, 
+                disp: "6-8", 
+                w: range(1,16), 
+                loc: "中院",
+                customPeriods: [
+                    { start: 775, end: 820 },   // 12:55 - 13:40
+                    { start: 830, end: 875 },   // 13:50 - 14:35
+                    { start: 885, end: 1050 }   // 14:45 - 17:30
+                ]
+            },
             { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8), loc: "上院" }
         ],
         2: [
             { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: range(1,16), loc: "中院" },
             { name: "数字电子技术", s: 3, e: 4, w: range(1,8), loc: "上院" },
             { name: "电路理论（荣誉）", s: 7, e: 8, w: range(1,16), loc: "上院" },
-            { name: "莎士比亚戏剧赏析", s: 9, e: 10, w: range(1,16), loc: "东上院" },
-            { name: "基础物理实验（荣誉）（1）", s: 11, e: 13, w: range(3,16), loc: "" } // 不排教室
+            { name: "基础物理实验（荣誉）（1）", s: 11, e: 13, w: range(3,16), loc: "" } 
         ],
         3: [
             { name: "综合英语III", s: 1, e: 2, w: range(1,16), loc: "中院" },
@@ -320,6 +387,7 @@
 
     const pxPerMin = 3; 
     const startOfDayMin = 450; 
+    const MAX_WEEKS = 16; // 锁定最大周数为16周
     
     function formatTime(min) {
         let h = Math.floor(min / 60).toString().padStart(2, '0');
@@ -330,12 +398,20 @@
     function getCurrentWeek(nowObj) {
         const nowAtMidnight = new Date(nowObj.getFullYear(), nowObj.getMonth(), nowObj.getDate());
         const startAtMidnight = new Date(SEMESTER_START_DATE.getFullYear(), SEMESTER_START_DATE.getMonth(), SEMESTER_START_DATE.getDate());
-        
-        const diffTime = nowAtMidnight - startAtMidnight;
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-        
+        const diffDays = Math.floor((nowAtMidnight - startAtMidnight) / (1000 * 60 * 60 * 24));
         if (diffDays < 0) return 1; 
-        return Math.floor(diffDays / 7) + 1;
+        
+        // 自动计算当前周数，如果超过16周，则停留在16周
+        let calculatedWeek = Math.floor(diffDays / 7) + 1;
+        return calculatedWeek > MAX_WEEKS ? MAX_WEEKS : calculatedWeek;
+    }
+
+    function getStandardPeriods(s, e) {
+        let res = [];
+        for(let i = s; i <= e; i++) {
+            res.push(classTimes[i-1]);
+        }
+        return res;
     }
 
     // --- 主界面渲染 ---
@@ -343,7 +419,6 @@
         const now = new Date();
         let dayOfWeek = now.getDay();
         if (dayOfWeek === 0) dayOfWeek = 7; 
-        
         const currentWeek = getCurrentWeek(now);
         
         document.getElementById('header-date').innerText = `${now.getMonth()+1}月${now.getDate()}日 星期${['日','一','二','三','四','五','六'][now.getDay()]}`;
@@ -363,25 +438,46 @@
         const todaysClasses = schedule[dayOfWeek] || [];
         todaysClasses.forEach(c => {
             if (c.w.includes(currentWeek)) {
-                let startMin = classTimes[c.s - 1].start;
-                let endMin = classTimes[c.e - 1].end;
+                let periods = c.customPeriods || getStandardPeriods(c.s, c.e);
+                let startMin = periods[0].start;
+                let endMin = periods[periods.length - 1].end;
                 
                 let block = document.createElement('div');
                 block.className = 'block';
                 block.style.top = `${(startMin - startOfDayMin) * pxPerMin}px`;
                 block.style.height = `${(endMin - startMin) * pxPerMin}px`;
-                block.style.backgroundColor = getColor(c.name); 
                 
-                // 渲染地点HTML (带SVG小图标，如果没地点则不渲染)
+                let baseHexColor = getColor(c.name);
+                
+                let bgHtml = '';
+                for(let i = 0; i < periods.length; i++) {
+                    let p = periods[i];
+                    let pTop = (p.start - startMin) * pxPerMin;
+                    let pHeight = (p.end - p.start) * pxPerMin;
+                    bgHtml += `<div class="block-bg" style="top:${pTop}px; height:${pHeight}px; background-color:${hexToRgba(baseHexColor, 1)};"></div>`;
+                    
+                    if (i < periods.length - 1) {
+                        let breakStart = p.end;
+                        let breakEnd = periods[i+1].start;
+                        let breakTop = (breakStart - startMin) * pxPerMin;
+                        let breakHeight = (breakEnd - breakStart) * pxPerMin;
+                        bgHtml += `<div class="block-bg" style="top:${breakTop}px; height:${breakHeight}px; background-color:${hexToRgba(baseHexColor, 0.35)};"></div>`;
+                    }
+                }
+
                 const locHtml = c.loc ? `<div class="block-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>${c.loc}</div>` : '';
+                const dispPeriod = c.disp || `${c.s}-${c.e}`;
 
                 block.innerHTML = `
-                    <div class="block-time">
-                        <span>${formatTime(startMin)} - ${formatTime(endMin)}</span>
-                        <span>(第${c.s}-${c.e}节)</span>
+                    ${bgHtml}
+                    <div class="block-content">
+                        <div class="block-time">
+                            <span>${formatTime(startMin)} - ${formatTime(endMin)}</span>
+                            <span>(第${dispPeriod}节)</span>
+                        </div>
+                        <div class="block-title">${c.name}</div>
+                        ${locHtml}
                     </div>
-                    <div class="block-title">${c.name}</div>
-                    ${locHtml}
                 `;
                 
                 const currentMin = now.getHours() * 60 + now.getMinutes();
@@ -398,18 +494,26 @@
     function updateScroll() {
         const now = new Date(); 
         const currentMin = now.getHours() * 60 + now.getMinutes() + (now.getSeconds() / 60);
-        
         const currentY = (currentMin - startOfDayMin) * pxPerMin;
         const screenCenterY = window.innerHeight / 2;
         const translateY = screenCenterY - currentY;
-        
         document.getElementById('timeline').style.transform = `translateY(${translateY}px)`;
     }
 
-    // --- 本周全览网格渲染 ---
-    function renderWeekGrid() {
-        const now = new Date();
-        const currentWeek = getCurrentWeek(now);
+    // --- 学期周历网格 ---
+    let viewingWeek = 1;
+    function renderWeekGrid(week) {
+        const currentWeek = getCurrentWeek(new Date());
+        let titleEl = document.getElementById('modal-title-text');
+        
+        if (week === currentWeek) {
+            titleEl.innerText = `第 ${week} 周 (本)`;
+            titleEl.style.fontSize = '16px';
+        } else {
+            titleEl.innerText = `第 ${week} 周`;
+            titleEl.style.fontSize = '18px';
+        }
+
         const grid = document.getElementById('week-grid');
         grid.innerHTML = ''; 
 
@@ -426,7 +530,7 @@
         for(let i = 1; i <= 13; i++) {
             let el = document.createElement('div');
             el.className = 'grid-time';
-            el.innerText = i;
+            el.innerHTML = `${i}<span>${formatTime(classTimes[i-1].start)}<br>${formatTime(classTimes[i-1].end)}</span>`;
             el.style.gridColumn = 1;
             el.style.gridRow = i + 1;
             grid.appendChild(el);
@@ -435,15 +539,14 @@
         for(let day = 1; day <= 5; day++) {
             const classes = schedule[day] || [];
             classes.forEach(c => {
-                if (c.w.includes(currentWeek)) {
+                if (c.w.includes(week)) {
                     let el = document.createElement('div');
                     el.className = 'grid-course';
-                    el.style.backgroundColor = getColor(c.name); 
+                    el.style.backgroundColor = hexToRgba(getColor(c.name), 1); 
                     el.style.gridColumn = day + 1;
                     el.style.gridRow = `${c.s + 1} / ${c.e + 2}`;
                     
                     const gridLocHtml = c.loc ? `<div class="grid-course-loc">${c.loc}</div>` : '';
-                    
                     el.innerHTML = `
                         <div class="grid-course-name">${c.name}</div>
                         ${gridLocHtml}
@@ -458,15 +561,40 @@
     const btnOpen = document.getElementById('week-view-btn');
     const btnClose = document.getElementById('close-modal-btn');
     const modal = document.getElementById('week-modal');
+    const scrollArea = document.getElementById('modal-body-scroll');
 
     btnOpen.addEventListener('click', () => {
-        renderWeekGrid(); 
+        viewingWeek = getCurrentWeek(new Date());
+        renderWeekGrid(viewingWeek); 
         modal.classList.add('show');
     });
 
     btnClose.addEventListener('click', () => {
         modal.classList.remove('show');
     });
+
+    // 左右箭头切换（加入了 16 周的严格限制）
+    document.getElementById('prev-week-btn').addEventListener('click', () => {
+        if (viewingWeek > 1) { viewingWeek--; renderWeekGrid(viewingWeek); }
+    });
+    document.getElementById('next-week-btn').addEventListener('click', () => {
+        if (viewingWeek < MAX_WEEKS) { viewingWeek++; renderWeekGrid(viewingWeek); } 
+    });
+
+    // 屏幕左右滑动切换 (Touch Events，同样加入了 16 周的严格限制)
+    let touchStartX = 0;
+    scrollArea.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, {passive: true});
+    
+    scrollArea.addEventListener('touchend', e => {
+        let touchEndX = e.changedTouches[0].screenX;
+        if (touchStartX - touchEndX > 50) { // 向左滑动 -> 下一周
+            if (viewingWeek < MAX_WEEKS) { viewingWeek++; renderWeekGrid(viewingWeek); }
+        } else if (touchEndX - touchStartX > 50) { // 向右滑动 -> 上一周
+            if (viewingWeek > 1) { viewingWeek--; renderWeekGrid(viewingWeek); }
+        }
+    }, {passive: true});
 
     // 初始化
     renderTimeline();
