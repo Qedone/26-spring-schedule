@@ -115,7 +115,7 @@
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            justify-content: flex-start; /* 改为置顶对齐 */
+            justify-content: flex-start; 
             gap: 3px;
         }
         .block-time {
@@ -199,7 +199,7 @@
             touch-action: manipulation;
         }
         .nav-btn:active { opacity: 0.5; }
-        .modal-title { font-size: 18px; font-weight: bold; width: 95px; text-align: center; white-space: nowrap;}
+        .modal-title { font-size: 18px; font-weight: bold; width: 110px; text-align: center; white-space: nowrap;}
         .close-btn {
             background: #f2f2f7;
             border: none;
@@ -222,7 +222,8 @@
         #week-grid {
             display: grid;
             grid-template-columns: 42px repeat(5, 1fr);
-            grid-auto-rows: 58px; 
+            /* 将第一行（表头）高度独立设为24px，消除过大空隙 */
+            grid-template-rows: 24px repeat(13, 58px); 
             gap: 4px;
             transform: translateX(0);
             opacity: 1;
@@ -230,8 +231,10 @@
         .grid-header {
             font-size: 12px;
             color: var(--text-sec);
-            text-align: center;
-            padding-bottom: 8px;
+            display: flex;
+            align-items: flex-end; /* 让文字靠下贴近课程块 */
+            justify-content: center;
+            padding-bottom: 4px;
         }
         .grid-time {
             font-size: 12px;
@@ -354,7 +357,6 @@
 
     const range = (start, end) => Array.from({length: end - start + 1}, (_, i) => start + i);
 
-    // 录入了精确的教学楼和教室号码 (room)
     const schedule = {
         1: [
             { name: "数学分析（荣誉）II", s: 1, e: 2, w: range(1,16), loc: "东下院", room: "105" },
@@ -476,7 +478,7 @@
                         // 浅色背景
                         bgHtml += `<div class="block-bg" style="top:${breakTop}px; height:${breakHeight}px; background-color:${hexToRgba(baseHexColor, 0.35)};"></div>`;
                         
-                        // 正中间的水印风咖啡/热气图标 (与定位icon同源粗细)
+                        // 正中间的水印风咖啡/热气图标
                         bgHtml += `
                         <div style="position:absolute; top:${breakTop}px; left:0; width:100%; height:${breakHeight}px; display:flex; justify-content:center; align-items:center; z-index:2; color: rgba(0,0,0,0.15);">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -490,12 +492,10 @@
                     }
                 }
 
-                // 组装完整的显示地点
                 const fullLocStr = c.room ? `${c.loc} ${c.room}` : c.loc;
                 const locHtml = c.loc ? `<div class="block-loc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>${fullLocStr}</div>` : '';
                 const dispPeriod = c.customPeriods ? `${c.s}-${c.e}` : `${c.s}-${c.e}`; 
 
-                // 内容不再居中，而是靠上渲染
                 block.innerHTML = `
                     ${bgHtml}
                     <div class="block-content">
@@ -550,7 +550,7 @@
             el.className = 'grid-time';
             el.innerHTML = `${i}<span>${formatTime(classTimes[i-1].start)}<br>${formatTime(classTimes[i-1].end)}</span>`;
             el.style.gridColumn = 1;
-            el.style.gridRow = i + 1;
+            el.style.gridRow = i + 1; // 由于表头单独占了行，节次往下顺延
             grid.appendChild(el);
         }
 
@@ -564,7 +564,6 @@
                     el.style.gridColumn = day + 1;
                     el.style.gridRow = `${c.s + 1} / ${c.e + 2}`;
                     
-                    // 网格中紧凑排版地点，如 "中院211" 不加空格
                     const gridLocStr = c.room ? `${c.loc}${c.room}` : c.loc;
                     const gridLocHtml = c.loc ? `<div class="grid-course-loc">${gridLocStr}</div>` : '';
                     
@@ -583,7 +582,7 @@
         let titleEl = document.getElementById('modal-title-text');
         
         if (week === currentWeek) {
-            titleEl.innerText = `第 ${week} 周 (本)`;
+            titleEl.innerText = `第 ${week} 周 (本周)`; // 更新为更美观的 (本周)
             titleEl.style.fontSize = '15px';
         } else {
             titleEl.innerText = `第 ${week} 周`;
@@ -616,7 +615,7 @@
     btnOpen.addEventListener('click', () => {
         viewingWeek = getCurrentWeek(new Date());
         let titleEl = document.getElementById('modal-title-text');
-        titleEl.innerText = `第 ${viewingWeek} 周 (本)`;
+        titleEl.innerText = `第 ${viewingWeek} 周 (本周)`; // 更新为 (本周)
         titleEl.style.fontSize = '15px';
         populateGridData(viewingWeek); 
         modal.classList.add('show');
