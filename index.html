@@ -357,6 +357,7 @@
 
     const range = (start, end) => Array.from({length: end - start + 1}, (_, i) => start + i);
 
+    // 更新了周一的新课：中国现代小说选读
     const schedule = {
         1: [
             { name: "数学分析（荣誉）II", s: 1, e: 2, w: range(1,16), loc: "东下院", room: "105" },
@@ -372,7 +373,8 @@
                     { start: 885, end: 930 }    // 14:45 - 15:30 
                 ]
             },
-            { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8), loc: "上院", room: "115" }
+            { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8), loc: "上院", room: "115" },
+            { name: "中国现代小说选读", s: 11, e: 13, w: range(1,11), loc: "东下院", room: "311" } // 新增课程
         ],
         2: [
             { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: range(1,16), loc: "中院", room: "311" },
@@ -582,7 +584,7 @@
         let titleEl = document.getElementById('modal-title-text');
         
         if (week === currentWeek) {
-            titleEl.innerText = `第 ${week} 周 (本周)`; // 更新为更美观的 (本周)
+            titleEl.innerText = `第 ${week} 周 (本周)`; 
             titleEl.style.fontSize = '15px';
         } else {
             titleEl.innerText = `第 ${week} 周`;
@@ -615,7 +617,7 @@
     btnOpen.addEventListener('click', () => {
         viewingWeek = getCurrentWeek(new Date());
         let titleEl = document.getElementById('modal-title-text');
-        titleEl.innerText = `第 ${viewingWeek} 周 (本周)`; // 更新为 (本周)
+        titleEl.innerText = `第 ${viewingWeek} 周 (本周)`; 
         titleEl.style.fontSize = '15px';
         populateGridData(viewingWeek); 
         modal.classList.add('show');
