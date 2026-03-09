@@ -357,7 +357,6 @@
 
     const range = (start, end) => Array.from({length: end - start + 1}, (_, i) => start + i);
 
-    // 更新了周一的新课：中国现代小说选读
     const schedule = {
         1: [
             { name: "数学分析（荣誉）II", s: 1, e: 2, w: range(1,16), loc: "东下院", room: "105" },
@@ -374,7 +373,7 @@
                 ]
             },
             { name: "面向人工智能的线性代数", s: 9, e: 10, w: range(1,8), loc: "上院", room: "115" },
-            { name: "中国现代小说选读", s: 11, e: 13, w: range(1,11), loc: "东下院", room: "311" } // 新增课程
+            { name: "中国现代小说选读", s: 11, e: 13, w: range(1,11), loc: "东下院", room: "311" }
         ],
         2: [
             { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: range(1,16), loc: "中院", room: "311" },
@@ -396,7 +395,8 @@
         ],
         5: [
             { name: "大学物理（荣誉）（1）", s: 1, e: 2, w: [2, 4, 6, 8, 10, 12, 14, 16], loc: "中院", room: "311" },
-            { name: "篮球", s: 7, e: 8, w: range(1,16), loc: "南区体育馆", room: "" }
+            { name: "篮球", s: 7, e: 8, w: range(1,16), loc: "南区体育馆", room: "" },
+            { name: "推理与思维训练", s: 9, e: 10, w: range(1,16), loc: "东中院", room: "4-204" } // 新增课程
         ]
     };
 
